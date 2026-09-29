@@ -1,0 +1,499 @@
+{
+  "title": "Environment Monitor",
+  "uid": "env-monitor",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "time": {
+    "from": "now-7d",
+    "to": "now"
+  },
+  "refresh": "5m",
+  "tags": [
+    "lorawan",
+    "environment"
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "device",
+        "label": "Device",
+        "type": "query",
+        "datasource": {
+          "type": "influxdb",
+          "uid": "influx-env"
+        },
+        "includeAll": true,
+        "multi": true,
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "refresh": 2,
+        "query": "import \"influxdata/influxdb/schema\"\nschema.tagValues(bucket: v.defaultBucket, tag: \"dev_eui\")"
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Minutes since last uplink (alert on silence, \u00a710.4)",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influx-env"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "m",
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 150
+              },
+              {
+                "color": "red",
+                "value": 216
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "textMode": "value_and_name"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influx-env"
+          },
+          "query": "from(bucket: v.defaultBucket)\n  |> range(start: -30d)\n  |> filter(fn: (r) => r._measurement == \"environment\" and r._field == \"f_cnt\")\n  |> filter(fn: (r) => r.dev_eui =~ /^${device:regex}$/)\n  |> last()\n  |> map(fn: (r) => ({_value: float(v: uint(v: now()) - uint(v: r._time)) / 60000000000.0, _time: r._time, _field: if exists r.device then r.device else r.dev_eui}))\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Temperature",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influx-env"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 4,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "celsius",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "showPoints": "auto",
+            "spanNulls": 10800000
+          },
+          "decimals": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influx-env"
+          },
+          "query": "from(bucket: v.defaultBucket)\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"environment\" and r._field == \"temperature\")\n  |> filter(fn: (r) => r.dev_eui =~ /^${device:regex}$/)\n  |> keep(columns: [\"_time\", \"_value\", \"device\", \"dev_eui\"])"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Relative humidity",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influx-env"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 4,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "humidity",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "showPoints": "auto",
+            "spanNulls": 10800000
+          },
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influx-env"
+          },
+          "query": "from(bucket: v.defaultBucket)\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"environment\" and r._field == \"humidity\")\n  |> filter(fn: (r) => r.dev_eui =~ /^${device:regex}$/)\n  |> keep(columns: [\"_time\", \"_value\", \"device\", \"dev_eui\"])"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Pressure",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influx-env"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 12,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "pressurehpa",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "showPoints": "auto",
+            "spanNulls": 10800000
+          },
+          "decimals": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influx-env"
+          },
+          "query": "from(bucket: v.defaultBucket)\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"environment\" and r._field == \"pressure\")\n  |> filter(fn: (r) => r.dev_eui =~ /^${device:regex}$/)\n  |> keep(columns: [\"_time\", \"_value\", \"device\", \"dev_eui\"])"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Battery (sampled under TX load, \u00a75.4)",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influx-env"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 12,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "volt",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "showPoints": "auto",
+            "spanNulls": 10800000,
+            "thresholdsStyle": {
+              "mode": "line+area"
+            }
+          },
+          "decimals": 2,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 3.3
+              },
+              {
+                "color": "green",
+                "value": 3.6
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influx-env"
+          },
+          "query": "from(bucket: v.defaultBucket)\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"environment\" and r._field == \"battery\")\n  |> filter(fn: (r) => r.dev_eui =~ /^${device:regex}$/)\n  |> keep(columns: [\"_time\", \"_value\", \"device\", \"dev_eui\"])"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Spreading factor (ADR) - sets the message rate",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influx-env"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 20,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "stepAfter",
+            "showPoints": "auto",
+            "spanNulls": 10800000
+          },
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influx-env"
+          },
+          "query": "from(bucket: v.defaultBucket)\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"environment\" and r._field == \"sf\")\n  |> filter(fn: (r) => r.dev_eui =~ /^${device:regex}$/)\n  |> keep(columns: [\"_time\", \"_value\", \"device\", \"dev_eui\"])"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Best-gateway RSSI",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influx-env"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 20,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "dBm",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "showPoints": "auto",
+            "spanNulls": 10800000
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influx-env"
+          },
+          "query": "from(bucket: v.defaultBucket)\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"environment\" and r._field == \"rssi\")\n  |> filter(fn: (r) => r.dev_eui =~ /^${device:regex}$/)\n  |> keep(columns: [\"_time\", \"_value\", \"device\", \"dev_eui\"])"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "Best-gateway SNR",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influx-env"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 28,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "dB",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "showPoints": "auto",
+            "spanNulls": 10800000
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influx-env"
+          },
+          "query": "from(bucket: v.defaultBucket)\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"environment\" and r._field == \"snr\")\n  |> filter(fn: (r) => r.dev_eui =~ /^${device:regex}$/)\n  |> keep(columns: [\"_time\", \"_value\", \"device\", \"dev_eui\"])"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "Gateways receiving each uplink",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influx-env"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 28,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {
+            "drawStyle": "points",
+            "lineInterpolation": "linear",
+            "showPoints": "auto",
+            "spanNulls": 10800000
+          },
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influx-env"
+          },
+          "query": "from(bucket: v.defaultBucket)\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"environment\" and r._field == \"gateways\")\n  |> filter(fn: (r) => r.dev_eui =~ /^${device:regex}$/)\n  |> keep(columns: [\"_time\", \"_value\", \"device\", \"dev_eui\"])"
+        }
+      ]
+    }
+  ],
+  "annotations": {
+    "list": []
+  }
+}

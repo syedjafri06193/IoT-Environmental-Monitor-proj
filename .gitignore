@@ -1,0 +1,6 @@
+firmware/build/
+__pycache__/
+.pytest_cache/
+*.pbm
+server/.env
+node_modules/

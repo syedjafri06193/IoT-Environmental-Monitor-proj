@@ -1,0 +1,18 @@
+ref,part,suggested_mpn,qty,function,sleep_current_ua,iq_reviewed,notes
+U1,STM32WLE5 SoC (or module),STM32WLE5JCI6 / NUCLEO-WL55JC1 for bring-up,1,MCU + sub-GHz radio,2.0,yes,"STOP2 + RTC on LSE ~1-2 uA. One chip, one antenna (§6.1)"
+U2,Nano-power LDO 3.0 V,TPS7A0230PDBVR,1,Regulator,0.025,yes,"Iq 25 nA. NOT AMS1117 (~5 mA = 18x the battery, §4.3). 3.0 V out keeps regulation to a ~3.1 V pack; below that it passes through - MCU runs to 1.8 V"
+U3,BME280,BME280,1,T/RH/P sensor,0.1,yes,Forced mode only. On a short cable in its own radiation shield (§9.2)
+U4,2.9in e-ink 128x296 SSD1680 bare panel + FPC,GDEY029T94,1,Display,1.0,yes,"Deep sleep after every refresh (§8.4). AVOID breakout boards with an onboard LDO/level shifter/power LED - or remove them"
+U5,Load switch for panel supply,TPS22917DBVR,1,E-ink power gating,0.5,yes,Optional - lets the panel be fully off; firmware also deep-sleeps it
+Q1,N-MOSFET low leakage,DMG2302UK,1,Battery divider switch,0.001,yes,Divider only draws current while sampling
+R1 R2,Resistor 1 MOhm 1%,-,2,Battery divider,0,yes,"Switched - an always-on 2 MOhm divider would be 2.25 uA, half the sleep budget"
+C1,Capacitor 100 nF C0G,-,1,ADC sample hold on divider,0,yes,High-Z source needs the cap + long sample time
+C2,Bulk capacitor 220 uF low-leakage polymer,-,1,Edges / e-ink inrush,0.5,yes,"Check datasheet leakage - some electrolytics leak several uA. Does not help an SF12 TX (§5.3)"
+R3 R4,Resistor 10 kOhm (I2C pull-ups),-,2,I2C bus,0,yes,Lines idle high in sleep so no current; never hold a pulled-up line low
+J1,Battery holder 3x AAA,Keystone 2479 or equivalent,1,Power,0,n/a,
+BT1,Lithium AAA Li-FeS2,Energizer L92,3,Battery,0,n/a,"~1200 mAh, flat to -40 degC. Not alkaline outdoors (§5.2)"
+AE1,868 MHz antenna (quarter-wave whip / SMA),-,1,Antenna,0,n/a,"Outside any metal, away from the battery, vertical (§9.4)"
+X1,32.768 kHz crystal (LSE),-,1,RTC,0,yes,Required for STOP2 timekeeping
+X2,TCXO 32 MHz,-,1,Radio reference,0,yes,Powered only during radio activity
+D-,LEDs,none,0,-,0,yes,"No power LED: 2 mA = 8760 mAh over 6 months (§4.3)"
+H1,Enclosure (white ABS/ASA) + PTFE membrane vent,Gore PolyVent / Amphenol LTW vent,1,Enclosure,0,n/a,See enclosure/README.md

@@ -1,0 +1,67 @@
+# EU868 region for ChirpStack v4.
+
+[[regions]]
+  id = "eu868"
+  description = "EU868"
+  common_name = "EU868"
+
+  [regions.gateway]
+    force_gws_private = false
+
+    [regions.gateway.backend]
+      enabled = "mqtt"
+
+      [regions.gateway.backend.mqtt]
+        event_topic = "eu868/gateway/+/event/+"
+        command_topic = "eu868/gateway/{{ gateway_id }}/command/{{ command }}"
+        server = "tcp://mosquitto:1883"
+        qos = 0
+        clean_session = false
+
+  [regions.network]
+    installation_margin = 10
+    rx_window = 0
+    rx1_delay = 1
+    rx1_dr_offset = 0
+    rx2_dr = 0
+    rx2_frequency = 869525000
+    rx2_prefer_on_rx1_dr_lt = 0
+    rx2_prefer_on_link_budget = false
+    downlink_tx_power = -1
+    # ADR on: the network moves the device's SF with link margin (§3.3)
+    adr_disabled = false
+    min_dr = 0
+    max_dr = 5
+
+    [regions.network.rejoin_request]
+      enabled = false
+      max_count_n = 0
+      max_time_n = 0
+
+    [regions.network.class_b]
+      ping_slot_dr = 0
+      ping_slot_frequency = 0
+
+    # The three mandatory channels (868.1/.3/.5) are implicit. These five
+    # match a standard 8-channel gateway; with more channels the per-channel
+    # duty cycle bites later (the "no_free_ch" trap, §3.2).
+    [[regions.network.extra_channels]]
+      frequency = 867100000
+      min_dr = 0
+      max_dr = 5
+    [[regions.network.extra_channels]]
+      frequency = 867300000
+      min_dr = 0
+      max_dr = 5
+    [[regions.network.extra_channels]]
+      frequency = 867500000
+      min_dr = 0
+      max_dr = 5
+    [[regions.network.extra_channels]]
+      frequency = 867700000
+      min_dr = 0
+      max_dr = 5
+    [[regions.network.extra_channels]]
+      frequency = 867900000
+      min_dr = 0
+      max_dr = 5

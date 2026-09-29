@@ -1,0 +1,16 @@
+name: ci
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "22" }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install pytest paho-mqtt
+      - run: make test
+      - name: Simulate SF12 on TTN for 14 days
+        run: firmware/build/sim --days 14 --sf 12

@@ -1,0 +1,112 @@
+# Self-hosted network + application stack (design doc §10):
+#
+#   gateway --UDP 1700--> gateway-bridge --MQTT--> chirpstack --MQTT--> bridge --> influxdb --> grafana
+#
+#   cp .env.example .env   # edit secrets
+#   docker compose up -d
+#
+# ChirpStack UI:  http://localhost:8080  (admin / admin - change it)
+# Grafana:        http://localhost:3000  (admin / $GRAFANA_PASSWORD)
+#
+# Using TTN instead? Drop chirpstack, gateway-bridge, postgres and redis, set
+# MQTT_HOST/MQTT_TOPICS on the bridge to TTN's MQTT server (v3/+/devices/+/up)
+# and remember the 30 s/day fair-use limit is then in force.
+
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2
+    restart: unless-stopped
+    ports: ["1883:1883"]
+    volumes:
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - mosquitto-data:/mosquitto/data
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: chirpstack
+      POSTGRES_PASSWORD: chirpstack
+      POSTGRES_DB: chirpstack
+    volumes: [postgres-data:/var/lib/postgresql/data]
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --save 300 1 --appendonly no
+    volumes: [redis-data:/data]
+
+  chirpstack:
+    image: chirpstack/chirpstack:4
+    restart: unless-stopped
+    command: -c /etc/chirpstack
+    depends_on: [postgres, redis, mosquitto]
+    environment:
+      CHIRPSTACK_API_SECRET: ${CHIRPSTACK_API_SECRET}
+    volumes: [./chirpstack:/etc/chirpstack:ro]
+    ports: ["8080:8080"]
+
+  gateway-bridge:
+    # Semtech UDP packet forwarder -> MQTT. For Basic Station use the
+    # chirpstack-gateway-bridge basicstation config instead.
+    image: chirpstack/chirpstack-gateway-bridge:4
+    restart: unless-stopped
+    depends_on: [mosquitto]
+    ports: ["1700:1700/udp"]
+    environment:
+      INTEGRATION__MQTT__EVENT_TOPIC_TEMPLATE: eu868/gateway/{{ .GatewayID }}/event/{{ .EventType }}
+      INTEGRATION__MQTT__STATE_TOPIC_TEMPLATE: eu868/gateway/{{ .GatewayID }}/state/{{ .StateType }}
+      INTEGRATION__MQTT__COMMAND_TOPIC_TEMPLATE: eu868/gateway/{{ .GatewayID }}/command/#
+      INTEGRATION__MQTT__AUTH__GENERIC__SERVERS: tcp://mosquitto:1883
+
+  influxdb:
+    image: influxdb:2.7
+    restart: unless-stopped
+    ports: ["8086:8086"]
+    environment:
+      DOCKER_INFLUXDB_INIT_MODE: setup
+      DOCKER_INFLUXDB_INIT_USERNAME: admin
+      DOCKER_INFLUXDB_INIT_PASSWORD: ${INFLUX_PASSWORD}
+      DOCKER_INFLUXDB_INIT_ORG: ${INFLUX_ORG}
+      DOCKER_INFLUXDB_INIT_BUCKET: ${INFLUX_BUCKET}
+      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: ${INFLUX_TOKEN}
+      DOCKER_INFLUXDB_INIT_RETENTION: 0s
+    volumes: [influxdb-data:/var/lib/influxdb2]
+
+  bridge:
+    build: ./bridge
+    restart: unless-stopped
+    depends_on: [mosquitto, influxdb]
+    environment:
+      MQTT_HOST: mosquitto
+      MQTT_TOPICS: ${MQTT_TOPICS}
+      INFLUX_URL: http://influxdb:8086
+      INFLUX_ORG: ${INFLUX_ORG}
+      INFLUX_BUCKET: ${INFLUX_BUCKET}
+      INFLUX_TOKEN: ${INFLUX_TOKEN}
+      SILENCE_FACTOR: ${SILENCE_FACTOR}
+      EXPECTED_INTERVAL_S: ${EXPECTED_INTERVAL_S}
+      BATTERY_LOW_V: ${BATTERY_LOW_V}
+      ALERT_WEBHOOK_URL: ${ALERT_WEBHOOK_URL}
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    restart: unless-stopped
+    depends_on: [influxdb]
+    ports: ["3000:3000"]
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD}
+      INFLUX_ORG: ${INFLUX_ORG}
+      INFLUX_BUCKET: ${INFLUX_BUCKET}
+      INFLUX_TOKEN: ${INFLUX_TOKEN}
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+
+volumes:
+  mosquitto-data:
+  postgres-data:
+  redis-data:
+  influxdb-data:
+  grafana-data:

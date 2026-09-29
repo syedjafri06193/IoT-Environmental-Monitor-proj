@@ -1,0 +1,28 @@
+# ChirpStack v4 - minimal EU868 configuration for this project.
+# Reference: https://www.chirpstack.io/docs/chirpstack/configuration.html
+# The chirpstack-docker repository ships full region files if you need more.
+
+[logging]
+  level = "info"
+
+[postgresql]
+  dsn = "postgres://chirpstack:chirpstack@postgres/chirpstack?sslmode=disable"
+
+[redis]
+  servers = ["redis://redis/"]
+
+[network]
+  net_id = "000000"
+  enabled_regions = ["eu868"]
+
+[api]
+  bind = "0.0.0.0:8080"
+  secret = "$CHIRPSTACK_API_SECRET"
+
+[integration]
+  enabled = ["mqtt"]
+
+  [integration.mqtt]
+    server = "tcp://mosquitto:1883/"
+    json = true
+    # Uplinks land on application/{application_id}/device/{dev_eui}/event/up

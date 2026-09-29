@@ -1,0 +1,7 @@
+apiVersion: 1
+providers:
+  - name: environment-monitor
+    folder: Environment Monitor
+    type: file
+    options:
+      path: /var/lib/grafana/dashboards
