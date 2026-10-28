@@ -4,3 +4,4 @@ __pycache__/
 *.pbm
 server/.env
 node_modules/
+build-san/

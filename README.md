@@ -1,9 +1,11 @@
 # IoT Environmental Monitor
 
+[![CI](https://github.com/syedjafri06193/IoT-Environmental-Monitor-proj/actions/workflows/ci.yml/badge.svg)](https://github.com/syedjafri06193/IoT-Environmental-Monitor-proj/actions/workflows/ci.yml)
+
 Battery-powered sensor node with LoRaWAN uplink, e-ink display, and MQTT
 bridge — designed for 6 months on 3× lithium AAA cells.
 
-The design rationale is in [`Documentation/README.md`](Documentation/README.md).
+The design rationale is in [`1—Documentation/design-guide.md`](1—Documentation/design-guide.md).
 Its central finding drives the whole codebase: **airtime, not battery, is the
 binding constraint.** On TTN's public network a device gets 30 s of uplink
 airtime a day — at SF12 that's **20 messages/day** with this 9-byte payload —
@@ -27,7 +29,7 @@ e-ink ──SPI─┘  (superloop + STOP2, ~5 µA)                  └─> aler
 | `server/` | Docker Compose stack: Mosquitto, ChirpStack v4, gateway bridge, InfluxDB, Grafana, and the Python MQTT→InfluxDB bridge with silence alerting |
 | `tools/` | `airtime_calc.py`, `power_analysis.py` (PPK2/Otii trace → mAh), `bom_check.py`, `gen_font.py` |
 | `hardware/bom.csv` | BOM with sleep current as a reviewed column |
-| `docs/` | Airtime and power budgets (M0), enclosure requirements |
+| `1—Documentation/` | Design guide, airtime and power budgets (M0), enclosure requirements |
 
 ## Quick start
 
@@ -86,13 +88,13 @@ Out-of-range values are clamped (never wrapped) and flagged.
 
 | Milestone | State |
 |---|---|
-| M0 budgets | Done — [`docs/airtime-budget.md`](docs/airtime-budget.md), [`docs/power-budget.md`](docs/power-budget.md) |
+| M0 budgets | Done — [`1—Documentation/airtime-budget.md`](1—Documentation/airtime-budget.md), [`1—Documentation/power-budget.md`](1—Documentation/power-budget.md) |
 | M2 sensor + payload, M4 airtime accounting, M5 e-ink logic, M6 network + dashboard | Code complete and tested on host |
 | M1 sleep current, M3 LoRaWAN on hardware | STM32WL port written; **needs a board and a PPK2** |
-| M7 PCB, M8 enclosure, M9 battery validation | Hardware work; requirements in `hardware/` and `docs/enclosure.md` |
+| M7 PCB, M8 enclosure, M9 battery validation | Hardware work; requirements in `hardware/` and [`1—Documentation/enclosure.md`](1—Documentation/enclosure.md) |
 
 Two deliberate departures from the doc, both explained in
-[`docs/airtime-budget.md`](docs/airtime-budget.md) and
+[`1—Documentation/airtime-budget.md`](1—Documentation/airtime-budget.md) and
 [`firmware/include/display.h`](firmware/include/display.h): the SF12 reference
 airtime is 1482.8 ms for this payload (the doc's 1318.9 ms is for 7 bytes), and
 pressure uses 0.01 hPa steps so the field actually spans the doc's stated

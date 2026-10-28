@@ -15,8 +15,8 @@ Alerts are published to MQTT `monitor/alerts/<dev_eui>` (retained) and
 optionally POSTed to ALERT_WEBHOOK_URL. Configuration is by environment
 variable; see server/.env.example.
 """
-import base64
 import json
+import math
 import logging
 import os
 import signal
@@ -76,12 +76,27 @@ def _best_rx(rx):
 
 
 def parse_uplink(topic, payload):
-    """Returns an Uplink, or None for messages without a decoded object."""
+    """Returns an Uplink, or None for messages without a decoded object.
+
+    Raises ValueError for anything malformed, so one bad message cannot
+    escape the MQTT callback (paho re-raises callback exceptions, which
+    stops the network loop and with it the whole bridge)."""
+    try:
+        return _parse_uplink(topic, payload)
+    except (ValueError, KeyError, TypeError, AttributeError) as e:
+        raise ValueError("malformed uplink: %s" % e) from e
+
+
+def _parse_uplink(topic, payload):
     msg = json.loads(payload)
+    if not isinstance(msg, dict):
+        raise ValueError("expected a JSON object")
 
     if topic.startswith("application/"):                     # ChirpStack v4
         info = msg.get("deviceInfo", {})
         obj = msg.get("object")
+        if obj is not None and not isinstance(obj, dict):
+            raise ValueError("decoded object is not a JSON object")
         if obj is None:
             log.warning("uplink from %s has no decoded object - is the codec "
                         "(decoder/decoder.js) set on the device profile?", info.get("devEui"))
@@ -99,6 +114,8 @@ def parse_uplink(topic, payload):
         ids = msg.get("end_device_ids", {})
         up = msg.get("uplink_message", {})
         obj = up.get("decoded_payload")
+        if obj is not None and not isinstance(obj, dict):
+            raise ValueError("decoded_payload is not a JSON object")
         if obj is None:
             log.warning("uplink from %s has no decoded_payload", ids.get("dev_eui"))
             return None
@@ -116,14 +133,19 @@ def parse_uplink(topic, payload):
 
 # ---------------------------------------------------------------- influx
 def _esc_tag(v):
-    return str(v).replace("\\", "\\\\").replace(",", "\\,").replace("=", "\\=").replace(" ", "\\ ")
+    # Line protocol is newline-delimited: a newline in a tag (a device name is
+    # user-editable in ChirpStack/TTN) would start a new, attacker-shaped line.
+    v = str(v).replace("\r", " ").replace("\n", " ")
+    return v.replace("\\", "\\\\").replace(",", "\\,").replace("=", "\\=").replace(" ", "\\ ")
 
 
 def to_line_protocol(u: Uplink, measurement="environment"):
     fields = {}
     for k in MEASUREMENT_KEYS:
         v = u.fields.get(k)
-        if isinstance(v, (int, float)) and not isinstance(v, bool):
+        # NaN/inf are not representable in line protocol; one would make
+        # InfluxDB reject the whole write, losing the good fields with it.
+        if isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v):
             fields[k] = float(v)
     for k in FLAG_KEYS:
         v = u.fields.get(k)
@@ -133,9 +155,9 @@ def to_line_protocol(u: Uplink, measurement="environment"):
             fields[k] = int(v)
     if u.sf is not None:
         fields["sf"] = int(u.sf)
-    if u.rssi is not None:
+    if u.rssi is not None and math.isfinite(float(u.rssi)):
         fields["rssi"] = float(u.rssi)
-    if u.snr is not None:
+    if u.snr is not None and math.isfinite(float(u.snr)):
         fields["snr"] = float(u.snr)
     if u.f_cnt is not None:
         fields["f_cnt"] = int(u.f_cnt)
