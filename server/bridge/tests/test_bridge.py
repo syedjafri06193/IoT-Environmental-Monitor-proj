@@ -101,3 +101,30 @@ def test_battery_and_sensor_alerts():
     a.on_uplink(up(7200, battery=4.0, sensor_error=False))
     assert ev == [("d", "battery", True), ("d", "sensor", True),
                   ("d", "battery", False), ("d", "sensor", False)]
+
+
+def test_malformed_payloads_raise_valueerror_only():
+    """paho re-raises callback exceptions and stops the loop, so every
+    malformed message must surface as the ValueError on_message handles."""
+    import pytest
+    topic = "application/abc/device/x/event/up"
+    for bad in ("not json", "[1, 2]", "null", json.dumps({"deviceInfo": [], "object": {}}),
+                json.dumps({**CHIRPSTACK, "object": [1]}),
+                json.dumps({**CHIRPSTACK, "rxInfo": "nope"})):
+        with pytest.raises(ValueError):
+            parse_uplink(topic, bad)
+
+
+def test_line_protocol_drops_non_finite_values():
+    fields = dict(DECODED, temperature=float("nan"), humidity=float("inf"))
+    u = Uplink(dev_eui="d", device_name="", ts=1.0, fields=fields, rssi=-100.0,
+               snr=float("nan"), sf=12, f_cnt=1, gateways=1)
+    line = to_line_protocol(u)
+    assert "nan" not in line.lower() and "inf" not in line.lower()
+    assert "pressure=" in line
+
+
+def test_line_protocol_cannot_be_split_by_a_device_name():
+    u = Uplink(dev_eui="d", device_name="evil\nenvironment,dev_eui=x temperature=99",
+               ts=1.0, fields=DECODED, rssi=None, snr=None, sf=12, f_cnt=1, gateways=1)
+    assert "\n" not in to_line_protocol(u)

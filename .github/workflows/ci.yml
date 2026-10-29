@@ -1,5 +1,11 @@
 name: ci
-on: [push, pull_request]
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
 
 jobs:
   test:
@@ -12,5 +18,10 @@ jobs:
         with: { python-version: "3.12" }
       - run: pip install pytest paho-mqtt
       - run: make test
+      - name: Firmware tests under ASan + UBSan
+        run: >
+          make -C firmware test BUILD=build-san
+          CFLAGS="-std=c11 -O1 -g -Wall -Wextra -fsanitize=address,undefined -fno-sanitize-recover=all"
+          LDLIBS="-lm -fsanitize=address,undefined"
       - name: Simulate SF12 on TTN for 14 days
         run: firmware/build/sim --days 14 --sf 12
