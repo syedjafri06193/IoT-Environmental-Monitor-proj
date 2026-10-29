@@ -100,3 +100,42 @@ airtime is 1482.8 ms for this payload (the doc's 1318.9 ms is for 7 bytes), and
 pressure uses 0.01 hPa steps so the field actually spans the doc's stated
 800–1455 hPa. The display shows an absolute reading time rather than
 "N min ago", because an e-ink image outlives the refreshes that would update it.
+
+<!-- project-metrics:start -->
+## Project Metrics
+
+[![Stars](https://img.shields.io/github/stars/syedjafri06193/IoT-Environmental-Monitor-proj?style=flat-square)](https://github.com/syedjafri06193/IoT-Environmental-Monitor-proj/stargazers) [![Forks](https://img.shields.io/github/forks/syedjafri06193/IoT-Environmental-Monitor-proj?style=flat-square)](https://github.com/syedjafri06193/IoT-Environmental-Monitor-proj/forks) [![Open issues](https://img.shields.io/github/issues/syedjafri06193/IoT-Environmental-Monitor-proj?style=flat-square)](https://github.com/syedjafri06193/IoT-Environmental-Monitor-proj/issues) [![Last commit](https://img.shields.io/github/last-commit/syedjafri06193/IoT-Environmental-Monitor-proj/improvements?style=flat-square)](https://github.com/syedjafri06193/IoT-Environmental-Monitor-proj/commits/improvements) [![Commits](https://img.shields.io/github/commit-activity/t/syedjafri06193/IoT-Environmental-Monitor-proj?style=flat-square)](https://github.com/syedjafri06193/IoT-Environmental-Monitor-proj/commits/improvements) [![Top language](https://img.shields.io/github/languages/top/syedjafri06193/IoT-Environmental-Monitor-proj?style=flat-square)](https://github.com/syedjafri06193/IoT-Environmental-Monitor-proj) [![Repo size](https://img.shields.io/github/repo-size/syedjafri06193/IoT-Environmental-Monitor-proj?style=flat-square)](https://github.com/syedjafri06193/IoT-Environmental-Monitor-proj)
+
+### Code
+
+| Metric | Value |
+|---|---|
+| Lines of code | 2,934 |
+| Source files | 55 |
+| Tracked files | 74 |
+| Documentation | 9 Markdown files (11,105 words), 1 PDF |
+| Commits | 7 |
+| Contributors | 1 |
+| Active | 2026-09-11 → 2026-10-28 |
+
+| Language | Lines | Share |
+|---|---:|---:|
+| C | 1,988 | 67.8% |
+| Python | 638 | 21.7% |
+| YAML | 109 | 3.7% |
+| JavaScript | 83 | 2.8% |
+| TOML | 71 | 2.4% |
+| Makefile | 38 | 1.3% |
+
+### Performance
+
+| Metric | Result |
+|---|---|
+| 14-day simulation, LoRaWAN SF12 | 18.9 uplinks/day, 0 blocked by duty budget |
+| Projected 6-month battery use | **95 mAh = 8%** of 1200 mAh |
+| Airtime per uplink | 1483 ms |
+
+<sub>Simulated figures (from the project's own simulator), recorded in [`README.md`](README.md).</sub>
+
+<sub>Code stats as of 2026-10-28, counted with pygount (comments and blank lines excluded). Badges update live.</sub>
+<!-- project-metrics:end -->
